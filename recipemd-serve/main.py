@@ -70,7 +70,7 @@ def serve(base_folder_path) -> Flask:
 
     @app.template_filter()
     def serialize_ingredients(ingredients: List[Ingredient]):
-        return ("\n".join(recipe_serializer._serialize_ingredient(i, rounding=2) for i in ingredients)).strip()
+        return ("\n".join(recipe_serializer._serialize_ingredient(i, 1, rounding=2) for i in ingredients)).strip()
 
     def forward_shortlink(shortlink: str):
         shortlink = shortlink.lower()
@@ -89,10 +89,10 @@ def serve(base_folder_path) -> Flask:
         print(files)
         return redirect(f'/{files[0]}', code=302)
 
-    def render_folder(relative_path: str, absolute_path: str): 
+    def render_folder(relative_path: str, absolute_path: str):
         if not absolute_path.endswith('/'):
             return redirect(f'/{relative_path}/', code=302)
-        
+
         children = [ch for ch in os.listdir(absolute_path) if not ch.startswith('.')]
         # children = sorted(children, key=lambda ch: ch.casefold())
 
@@ -111,13 +111,13 @@ def serve(base_folder_path) -> Flask:
                 except:
                     child_files.append(ch)
 
-        child_folders = sorted(child_folders, key=lambda ch: ch.casefold())        
+        child_folders = sorted(child_folders, key=lambda ch: ch.casefold())
         child_recipes = sorted(child_recipes, key=lambda ch: ch[1].casefold())
 
 
         return render_template("folder.html", child_folders=child_folders, child_recipes=child_recipes, child_files=child_files, path=relative_path)
 
-    def render_recipe(relative_path: str, absolute_path: str): 
+    def render_recipe(relative_path: str, absolute_path: str):
         with open(absolute_path, 'r', encoding='UTF-8') as f:
             required_yield_str = request.args.get('yield', '1')
             required_yield = recipe_parser.parse_amount(required_yield_str)
@@ -143,8 +143,8 @@ def serve(base_folder_path) -> Flask:
             return render_template(
                 "recipe.html",
                 recipe=recipe,
-                yields=recipe_serializer._serialize_yields(recipe.yields, rounding=2),
-                tags=recipe_serializer._serialize_tags(recipe.tags),
+                yields=f'**{", ".join(recipe_serializer._serialize_amount(a, rounding=2) for a in recipe.yields)}**\n\n',
+                tags=f'*{", ".join(recipe.tags)}*\n\n',
                 units=list(set(y.unit for y in recipe.yields)),
                 default_yield=recipe_serializer._serialize_amount(recipe.yields[0]) if recipe.yields else "1",
                 path=relative_path,
@@ -156,7 +156,7 @@ def serve(base_folder_path) -> Flask:
     def download_file(relative_path=''):
         absolute_path = os.path.join(base_folder_path, relative_path)
 
-        if not os.path.exists(absolute_path): 
+        if not os.path.exists(absolute_path):
             return forward_shortlink(relative_path)
 
         if os.path.isdir(absolute_path):
@@ -175,11 +175,11 @@ def serve(base_folder_path) -> Flask:
 def main():
     if len(sys.argv) > 1:
         path = os.path.join(os.getcwd(), sys.argv[1])
-    else: 
+    else:
         path = os.getcwd()
     print(path)
     app = serve(path)
-    app.run(host="0.0.0.0", debug=True)
+    app.run(host="0.0.0.0", debug=True, port=2345)
 
 
 if __name__ == "__main__":

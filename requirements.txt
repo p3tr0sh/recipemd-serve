@@ -1,2 +1,4 @@
-flask==1.1.0
+flask==2.1.0
 lxml==4.6.2
+commonmark==0.9.1
+recipemd==4.1.0
